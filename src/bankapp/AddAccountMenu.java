@@ -150,27 +150,26 @@ public class AddAccountMenu extends javax.swing.JDialog {
             JOptionPane.showMessageDialog(this, warnings.toString(), "Input Warnings", JOptionPane.WARNING_MESSAGE);
         }
         else {
-            Account account = null;
+            AccountType accountType = AccountType.Undefined;
             if(typeField.getSelectedItem().toString() == "Checking") {
                 if(amount >= 100) {
-                    account = new Checking(amount);
+                    accountType = AccountType.Checking;
                 }
                 else {
                     warnings.append("Initial deposit must be at least $100 for Checking accouunts.");
                 }
-                account = new Checking(amount);
             }
             else if(typeField.getSelectedItem().toString() == "Saving") {
                 if(amount >= 50) {
-                    account = new Saving(amount);
+                    accountType = AccountType.Saving;
                 }
                 else {
                     warnings.append("Initial deposit must be at least $50 for Saving accouunts.");
                 }
             }
-            if(account != null) {
-                customer = new Customer(firstName, lastName, ssn, account);
-                bank.addCustomer(customer);
+            if(accountType != AccountType.Undefined) {
+                int accountId = bank.openAccount(firstName, lastName, ssn, accountType, amount);
+                customer = bank.getCustomer(accountId);
                 this.dispose();
             }
             else {

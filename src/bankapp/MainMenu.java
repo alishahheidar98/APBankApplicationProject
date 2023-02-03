@@ -25,6 +25,7 @@ import javax.swing.table.DefaultTableModel;
 public class MainMenu extends javax.swing.JFrame {
     private Bank bank;
     private String saveLocation = null;
+    private final DefaultTableModel model;
 
     /**
      * Creates new form MainMenu
@@ -33,6 +34,8 @@ public class MainMenu extends javax.swing.JFrame {
         initComponents();
         setLocationRelativeTo(null);
         bank = new Bank();
+        model = (DefaultTableModel) accountTable.getModel();
+        reloadTable();
     }
 
     /**
@@ -53,9 +56,6 @@ public class MainMenu extends javax.swing.JFrame {
         accountTable = new javax.swing.JTable();
         menuBar = new javax.swing.JMenuBar();
         fileMenu = new javax.swing.JMenu();
-        saveMenuItem = new javax.swing.JMenuItem();
-        saveAsMenuItem = new javax.swing.JMenuItem();
-        openMenuItem = new javax.swing.JMenuItem();
         exitMenuItem = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -160,34 +160,6 @@ public class MainMenu extends javax.swing.JFrame {
 
         fileMenu.setText("File");
 
-        saveMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_S, java.awt.event.InputEvent.CTRL_MASK));
-        saveMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/bankapp/220-2201567_png-file-save-icon-vector-png-transparent-png.jpg"))); // NOI18N
-        saveMenuItem.setText("Save");
-        saveMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveMenuItemActionPerformed(evt);
-            }
-        });
-        fileMenu.add(saveMenuItem);
-
-        saveAsMenuItem.setText("Save As...");
-        saveAsMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                saveAsMenuItemActionPerformed(evt);
-            }
-        });
-        fileMenu.add(saveAsMenuItem);
-
-        openMenuItem.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_O, java.awt.event.InputEvent.CTRL_MASK));
-        openMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/bankapp/folder_open.png"))); // NOI18N
-        openMenuItem.setText("Open");
-        openMenuItem.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                openMenuItemActionPerformed(evt);
-            }
-        });
-        fileMenu.add(openMenuItem);
-
         exitMenuItem.setIcon(new javax.swing.ImageIcon(getClass().getResource("/delete-icon.png"))); // NOI18N
         exitMenuItem.setText("Exit");
         exitMenuItem.addActionListener(new java.awt.event.ActionListener() {
@@ -222,15 +194,28 @@ public class MainMenu extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void withdrawButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_withdrawButtonActionPerformed
+        depositOrWithdraw("withdraw");
+    }//GEN-LAST:event_withdrawButtonActionPerformed
+
+    private void depositOrWithdraw(String action) {
         int selectedRow = accountTable.getSelectedRow();
         Customer customer = getSelectedCustomer(selectedRow);
         if(customer != null) {
-            WithdrawalMenu menu = new WithdrawalMenu(this, true, customer);
-            menu.setVisible(true);
+            javax.swing.JDialog window = null;
+            if(action.equals("deposit")) {
+                window = new DepositMenu(this, true, bank, customer);
+            }
+            else if(action.equals("withdraw")) {
+                window = new WithdrawalMenu(this, true, bank, customer);
+            }
+            if(window != null) {
+                window.setVisible(true);
+            }
+            customer = bank.getCustomer(customer.getAccount().getAccountNumber());
             reloadCustomerRowData(selectedRow, customer);
         }
-    }//GEN-LAST:event_withdrawButtonActionPerformed
-
+    }
+    
     private void exitMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_exitMenuItemActionPerformed
         this.dispose();
     }//GEN-LAST:event_exitMenuItemActionPerformed
@@ -244,24 +229,21 @@ public class MainMenu extends javax.swing.JFrame {
     }//GEN-LAST:event_addAccountButtonActionPerformed
 
     private void removeAccountButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeAccountButtonActionPerformed
-        int selectedRow = accountTable.getSelectedRow();
-        if(selectedRow >= 0) {
-           Customer customer = getSelectedCustomer(selectedRow);
-           if(customer != null) {
-              bank.removeCustomer(customer);
-           removeCustomerFromTable(selectedRow); 
-           }           
-        }   
+        int result = JOptionPane.showConfirmDialog(this, "Are you sure?", "Select an Option", JOptionPane.YES_NO_OPTION);
+        if(result == JOptionPane.OK_OPTION) {
+            int selectedRow = accountTable.getSelectedRow();
+            if(selectedRow >= 0) {
+                Customer customer = getSelectedCustomer(selectedRow);
+                if(customer != null) {
+                    bank.closeAccount(customer.getAccount().getAccountNumber());
+                    removeCustomerFromTable(selectedRow); 
+                }           
+            }   
+        }
     }//GEN-LAST:event_removeAccountButtonActionPerformed
 
     private void depositButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_depositButtonActionPerformed
-        int selectedRow = accountTable.getSelectedRow();
-        Customer customer = getSelectedCustomer(selectedRow);
-        if(customer != null) {
-            DepositMenu menu = new DepositMenu(this, true, customer);
-            menu.setVisible(true);
-            reloadCustomerRowData(selectedRow, customer);
-        }
+        depositOrWithdraw("deposit");
     }//GEN-LAST:event_depositButtonActionPerformed
 
     private void accountTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_accountTableMouseClicked
@@ -271,68 +253,11 @@ public class MainMenu extends javax.swing.JFrame {
             int selectedRow = accountTable.getSelectedRow();
             Customer customer = getSelectedCustomer(selectedRow);
             if(customer != null) {
-                AccountDetailsPage page = new AccountDetailsPage(this, true, customer);
+                AccountDetailsPage page = new AccountDetailsPage(this, true, bank, customer);
                 page.setVisible(true);
             }
         }
     }//GEN-LAST:event_accountTableMouseClicked
-
-    private void saveMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveMenuItemActionPerformed
-        if(saveLocation != null) {
-            saveFile(saveLocation);
-        }
-        else {
-            saveAsMenuItemActionPerformed(evt);
-        }
-    }//GEN-LAST:event_saveMenuItemActionPerformed
-
-    private void openMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openMenuItemActionPerformed
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new BofFilter());
-        chooser.setAcceptAllFileFilterUsed(false);
-        int result = chooser.showOpenDialog(this);
-        if(result == JFileChooser.APPROVE_OPTION) {
-            if(!chooser.getSelectedFile().toString().toLowerCase().endsWith(".bof")) {
-                JOptionPane.showMessageDialog(this, "Unsupported file type selected.", "Unsupported File", JOptionPane.ERROR_MESSAGE);
-            }
-            else {
-                try {
-                    FileInputStream fIn = new FileInputStream(chooser.getSelectedFile());
-                    ObjectInputStream objIn = new ObjectInputStream(fIn);
-                    Object bankData = objIn.readObject();
-                    if(bankData instanceof Bank) {
-                        bank = (Bank) bankData;
-                        reloadTable();
-                    }
-                    saveLocation = chooser.getSelectedFile().toString();
-                } catch (FileNotFoundException ex) {
-                    Logger.getLogger(MainMenu.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(MainMenu.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(MainMenu.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-    }//GEN-LAST:event_openMenuItemActionPerformed
-
-    private void saveAsMenuItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveAsMenuItemActionPerformed
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new BofFilter());
-        chooser.setAcceptAllFileFilterUsed(false);
-        int result = chooser.showSaveDialog(this);
-        if(result == JFileChooser.APPROVE_OPTION) {
-            File file = chooser.getSelectedFile();
-            String fileName = file.toString();
-            if(!fileName.toLowerCase().endsWith(".bof")) {
-                fileName += ".bof";
-            }
-            boolean saved = saveFile(fileName);
-            if(saved) {
-                saveLocation = fileName;
-            }           
-        }
-    }//GEN-LAST:event_saveAsMenuItemActionPerformed
 
     private boolean saveFile(String fileName) {
         try {
@@ -353,24 +278,21 @@ public class MainMenu extends javax.swing.JFrame {
         Customer customer = null;
         if(selectedRow >= 0) {
             int accountNumber = (int) accountTable.getValueAt(selectedRow, 2);
-            customer = bank.getCustomerByAccountNumber(accountNumber);
+            customer = bank.getCustomer(accountNumber);
         }    
         return customer;
     }
     
     private void addCustomerToTable(Customer customer) {
-        DefaultTableModel model = (DefaultTableModel) accountTable.getModel();
         model.addRow(new Object[]{});
         reloadCustomerRowData(model.getRowCount() - 1, customer);
     }
     
     private void removeCustomerFromTable(int row){
-        DefaultTableModel model = (DefaultTableModel) accountTable.getModel();
         model.removeRow(row);
     }
     
     private void reloadCustomerRowData(int selectedRow, Customer customer) {
-        DefaultTableModel model = (DefaultTableModel) accountTable.getModel();
         model.setValueAt(customer.getFirstName(), selectedRow, 0);
         model.setValueAt(customer.getLastName(), selectedRow, 1);
         model.setValueAt(customer.getAccount().getAccountNumber(), selectedRow, 2);
@@ -378,6 +300,12 @@ public class MainMenu extends javax.swing.JFrame {
     }
     
     private void reloadTable() {
+        
+        DefaultTableModel model = (DefaultTableModel) accountTable.getModel();
+    
+        for(int i = model.getRowCount() - 1; i >= 0; i--) {
+            model.removeRow(i);
+        }
        for(Customer c : bank.getCustomers()) {
            addCustomerToTable(c);
        } 
@@ -433,10 +361,7 @@ public class MainMenu extends javax.swing.JFrame {
     private javax.swing.JMenu fileMenu;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JMenuBar menuBar;
-    private javax.swing.JMenuItem openMenuItem;
     private javax.swing.JButton removeAccountButton;
-    private javax.swing.JMenuItem saveAsMenuItem;
-    private javax.swing.JMenuItem saveMenuItem;
     private javax.swing.JButton withdrawButton;
     // End of variables declaration//GEN-END:variables
 

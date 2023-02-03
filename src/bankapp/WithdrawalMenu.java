@@ -15,16 +15,18 @@ import javax.swing.JOptionPane;
  */
 public class WithdrawalMenu extends javax.swing.JDialog {
 
-    private final Customer customer;
+    private Customer customer;
+    private Bank bank;
 
     /**
      * Creates new form DepositMenu
      */
-    public WithdrawalMenu(java.awt.Frame parent, boolean modal, Customer customer) {
+    public WithdrawalMenu(java.awt.Frame parent, boolean modal, Bank bank, Customer customer) {
         super(parent, modal);
         initComponents();
         setLocationRelativeTo(parent);
         this.customer = customer;
+        this.bank = bank;
     }
 
     /**
@@ -81,10 +83,10 @@ public class WithdrawalMenu extends javax.swing.JDialog {
             double amount = 0;
             try{
                 amount = Bank.round(Double.parseDouble(amountField.getText()), 2);
-                int result = JOptionPane.showConfirmDialog(this, "Withdrawal $" + String.format("%.2f", amount) + "from the account?\nTransaction Fee: $" + String.format("%.2f",customer.getAccount().getTransactionFee()));
+                int result = JOptionPane.showConfirmDialog(this, "Withdrawal $" + String.format("%.2f", amount) + "from the account?\nTransaction Fee: $" + String.format("%.2f", bank.getTransactionFee(customer.getAccount().getAccountType())));
                 if(result == JOptionPane.OK_OPTION) {
                     try {
-                        customer.getAccount().withdrawal(amount);
+                        bank.withdrawal(customer.getAccount().getAccountNumber(), amount);
                         this.dispose();
                     }
                     catch (InsufficientFundsException ex) {

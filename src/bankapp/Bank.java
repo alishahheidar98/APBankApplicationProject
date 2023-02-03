@@ -16,53 +16,22 @@ import java.util.ArrayList;
 
 public class Bank implements Serializable {
 
-    private ArrayList<Customer> customers = new ArrayList<>();
-
-     void addCustomer(Customer customer) {
-         if(accountExists(customer.getAccount().getAccountNumber())) {
-             customer.getAccount().setAccountNumber(findValidAccountNumber());
-         }
-         customers.add(customer);
+    private DbService database = new DbService();
+    
+    int openAccount(String firstName, String lastName, String ssn, AccountType accountType, double balance) {
+        return database.AddAccount(firstName, lastName, ssn, accountType, balance);               
     }
-     
-     private int findValidAccountNumber() {
-         int accountNumber = 0;
-         do{
-            accountNumber = Account.getNextAccountNumber();    
-         } while(accountExists(accountNumber));
-         return accountNumber;
-     }
-     
-     private boolean accountExists(int accountNumber) {
-         for(Customer c : customers) {
-             if(c.getAccount().getAccountNumber() == accountNumber) {
-                 return true;
-             }
-         }
-         return false;
-     }
 
-     Customer getCustomer(int account) {
-         return customers.get(account);
+     Customer getCustomer(int accountId) {
+         return database.GetAccount(accountId);
     }
 
     ArrayList<Customer> getCustomers() {
-         return customers;
+         return database.GetAllAccounts();
     }
 
-    Customer getCustomerByAccountNumber(int accountNumber) {
-        Customer customer = null;
-        for(Customer c : customers) {
-            if(c.getAccount().getAccountNumber() == accountNumber) {
-                customer = c;
-                break;
-            }
-        }
-        return customer;
-    }
-
-    void removeCustomer(Customer customer) {
-    customers.remove(customer);
+    boolean closeAccount(int accountId) {
+        return database.DeleteAccount(accountId);
     }
     
     public static double round(double value, int places) {
@@ -70,8 +39,54 @@ public class Bank implements Serializable {
             throw new IllegalArgumentException();
         }
         BigDecimal bd = new BigDecimal(value);
-        bd = bd.setScale(places, RoundingMode.FLOOR);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
         return bd.doubleValue();
     }
+    
+    public void withdrawal(int accountId, double amount) throws InsufficientFundsException {
+        Customer customer = getCustomer(accountId);
+        double transactionFee = getTransactionFee(customer.getAccount().getAccountType());
+        if (amount + transactionFee > customer.getAccount().getBalance()) {
+            throw new InsufficientFundsException();
+        }
+        double newBalance = customer.getAccount().getBalance() - (amount + transactionFee);
+        database.UpdateAccount(accountId, newBalance);
+    }
+
+    public void deposit(int accountId, double amount) throws InvalidAmountException {
+        Customer customer = getCustomer(accountId);
+        if (amount <= 0) {
+            throw new InvalidAmountException();
+        }
+        double interest = checkInterest(customer.getAccount().getBalance(), amount);
+        double amountToDeposit = amount + (amount * interest);
+        database.UpdateAccount(accountId, customer.getAccount().getBalance() + amountToDeposit);
+    }
+
+    public double checkInterest(double balance, double amount) {
+        double interest = 0;
+        if (balance + amount > 10000) {
+            interest = 0.05;
+        } else {
+            interest = 0.02;
+        }
+        return interest;
+    }
+
+    public double getTransactionFee(AccountType accountType) {
+        double transactionFee = 0;
+        switch(accountType) {
+            case Checking:
+            case Saving:
+                transactionFee = 5;
+                break;
+            case Undefined:
+            default:
+                transactionFee = 0;
+                break;
+        }
+    return transactionFee;
+    }
+    
 }
 

@@ -15,16 +15,18 @@ import javax.swing.JOptionPane;
  */
 public class DepositMenu extends javax.swing.JDialog {
 
-    private final Customer customer;
+    private Customer customer;
+    private Bank bank;
 
     /**
      * Creates new form DepositMenu
      */
-    public DepositMenu(java.awt.Frame parent, boolean modal, Customer customer) {
+    public DepositMenu(java.awt.Frame parent, boolean modal, Bank bank, Customer customer) {
         super(parent, modal);
         initComponents();
         setLocationRelativeTo(parent);
         this.customer = customer;
+        this.bank = bank;
     }
 
     /**
@@ -81,10 +83,10 @@ public class DepositMenu extends javax.swing.JDialog {
             double amount = 0;
             try{
                 amount = Bank.round(Double.parseDouble(amountField.getText()), 2);
-                int result = JOptionPane.showConfirmDialog(this, "Deposit $" + String.format("%.2f", amount) + "to the account?\nInterest Earned: $" + String.format("%.2f",(customer.getAccount().getInterest() * amount)));
+                int result = JOptionPane.showConfirmDialog(this, "Deposit $" + String.format("%.2f", amount) + "to the account?\nInterest Earned: $" + String.format("%.2f",(bank.checkInterest(customer.getAccount().getBalance(), 0) * amount)));
                 if(result == JOptionPane.OK_OPTION) {
                     try {
-                        customer.getAccount().deposit(amount);
+                        bank.deposit(customer.getAccount().getAccountNumber(), amount);
                         this.dispose();
                     } catch (InvalidAmountException ex) {
                         warnings.append("Deposit amount is invalid.\n");
